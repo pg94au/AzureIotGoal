@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.28307.136
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RegistryManagerTestApp", "RegistryManagerTestApp\RegistryManagerTestApp.csproj", "{26F99BBA-227D-43A6-9E25-946DD49707DD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{26F99BBA-227D-43A6-9E25-946DD49707DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{26F99BBA-227D-43A6-9E25-946DD49707DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{26F99BBA-227D-43A6-9E25-946DD49707DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{26F99BBA-227D-43A6-9E25-946DD49707DD}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {AFFC6EA1-08EF-448D-9D98-6C50342BEAD9}
+	EndGlobalSection
+EndGlobal
