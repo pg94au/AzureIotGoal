@@ -40,6 +40,7 @@ namespace RegistryManagerTestApp
             {
                 Console.WriteLine("1 - Display all currently registered devices");
                 Console.WriteLine("2 - Add new device to hub");
+                Console.WriteLine("3 - Delete existing device from hub");
                 Console.WriteLine("X - Exit");
                 Console.WriteLine();
 
@@ -52,6 +53,9 @@ namespace RegistryManagerTestApp
                         break;
                     case '2':
                         await AddNewDevice();
+                        break;
+                    case '3':
+                        await DeleteExistingDevice();
                         break;
                     case 'X':
                         return;
@@ -68,24 +72,27 @@ namespace RegistryManagerTestApp
         {
             Console.WriteLine("Displaying all currently registered devices:");
 
-            var registryManager = RegistryManager.CreateFromConnectionString(_iotHubConnectionString);
-
-            var devicesQuery = registryManager.CreateQuery("select * from devices");
-
-            while (devicesQuery.HasMoreResults)
+            using (var registryManager = RegistryManager.CreateFromConnectionString(_iotHubConnectionString))
             {
-                //var results = await devicesQuery.GetNextAsJsonAsync();
-                //foreach (var result in results)
-                //{
-                //    Console.WriteLine(result);
-                //}
 
-                var results = await devicesQuery.GetNextAsTwinAsync();
-                foreach (var result in results)
+                var devicesQuery = registryManager.CreateQuery("select * from devices");
+
+                while (devicesQuery.HasMoreResults)
                 {
-                    Console.WriteLine($"DeviceId={result.DeviceId}, Status={result.Status}, ConnectionState={result.ConnectionState}");
+                    //var results = await devicesQuery.GetNextAsJsonAsync();
+                    //foreach (var result in results)
+                    //{
+                    //    Console.WriteLine(result);
+                    //}
+
+                    var results = await devicesQuery.GetNextAsTwinAsync();
+                    foreach (var result in results)
+                    {
+                        Console.WriteLine($"DeviceId={result.DeviceId}, Status={result.Status}, ConnectionState={result.ConnectionState}");
+                    }
                 }
             }
+
             Console.WriteLine("Done");
         }
 
@@ -99,15 +106,33 @@ namespace RegistryManagerTestApp
 
             var newDeviceRequest = new Device(deviceId);
 
-            var registryManager = RegistryManager.CreateFromConnectionString(_iotHubConnectionString);
-
-            var newDevice = await registryManager.AddDeviceAsync(newDeviceRequest);
+            Device newDevice;
+            using (var registryManager = RegistryManager.CreateFromConnectionString(_iotHubConnectionString))
+            {
+                newDevice = await registryManager.AddDeviceAsync(newDeviceRequest);
+            }
 
             Console.WriteLine($"Device {newDevice.Id} created.");
             Console.WriteLine();
             Console.WriteLine("To connect this device, use the following credentials:");
             Console.WriteLine($"Primary Key: {newDevice.Authentication.SymmetricKey.PrimaryKey}");
             Console.WriteLine($"Secondary Key: {newDevice.Authentication.SymmetricKey.SecondaryKey}");
+        }
+
+        private async Task DeleteExistingDevice()
+        {
+            Console.WriteLine("Delete existing device from hub:");
+
+            Console.WriteLine();
+            Console.Write("Enter ID for device: ");
+            var deviceId = Console.ReadLine();
+
+            using (var registryManager = RegistryManager.CreateFromConnectionString(_iotHubConnectionString))
+            {
+                await registryManager.RemoveDeviceAsync(deviceId);
+            }
+
+            Console.WriteLine("Done");
         }
     }
 }
