@@ -6,7 +6,7 @@ namespace RegistryManagerTestApp
 {
     class Program
     {
-        private const string IotHubConnectionString = "HostName=iot-hub-paul.azure-devices.net;SharedAccessKeyName=iothubowner;SharedAccessKey=kSSGc6PoxbHdZRKzIEiPYL4IHo2tDvUmo21FSQ45OUg=";
+        private const string IotHubConnectionString = ""; // TODO: Get from settings.
 
         static async Task Main(string[] args)
         {
