@@ -39,6 +39,7 @@ namespace RegistryManagerTestApp
             while (true)
             {
                 Console.WriteLine("1 - Display all currently registered devices");
+                Console.WriteLine("2 - Add new device to hub");
                 Console.WriteLine("X - Exit");
                 Console.WriteLine();
 
@@ -48,6 +49,9 @@ namespace RegistryManagerTestApp
                 {
                     case '1':
                         await DisplayAllExistingDevices();
+                        break;
+                    case '2':
+                        await AddNewDevice();
                         break;
                     case 'X':
                         return;
@@ -83,6 +87,27 @@ namespace RegistryManagerTestApp
                 }
             }
             Console.WriteLine("Done");
+        }
+
+        private async Task AddNewDevice()
+        {
+            Console.WriteLine("Adding new device to hub:");
+
+            Console.WriteLine();
+            Console.Write("Enter ID for device: ");
+            var deviceId = Console.ReadLine();
+
+            var newDeviceRequest = new Device(deviceId);
+
+            var registryManager = RegistryManager.CreateFromConnectionString(_iotHubConnectionString);
+
+            var newDevice = await registryManager.AddDeviceAsync(newDeviceRequest);
+
+            Console.WriteLine($"Device {newDevice.Id} created.");
+            Console.WriteLine();
+            Console.WriteLine("To connect this device, use the following credentials:");
+            Console.WriteLine($"Primary Key: {newDevice.Authentication.SymmetricKey.PrimaryKey}");
+            Console.WriteLine($"Secondary Key: {newDevice.Authentication.SymmetricKey.SecondaryKey}");
         }
     }
 }
