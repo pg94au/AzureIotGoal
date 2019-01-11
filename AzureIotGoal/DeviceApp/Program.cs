@@ -40,7 +40,7 @@ namespace DeviceApp
             var deviceClient = DeviceClient.CreateFromConnectionString(_deviceConnectionString, TransportType.Mqtt);
             var twin = await deviceClient.GetTwinAsync();
 
-            Console.WriteLine("Sending periodic messages to hub.  Hit Ctrl-C to terminate.");
+            Console.WriteLine("Sending periodic events to hub.  Hit Ctrl-C to terminate.");
             while (true)
             {
                 var message = $"The current time from {twin.DeviceId} is {DateTime.Now.ToLongTimeString()}.";

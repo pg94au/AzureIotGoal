@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Azure.Devices;
 using Microsoft.Extensions.Configuration;
@@ -45,6 +46,7 @@ namespace RegistryManagerTestApp
                 Console.WriteLine("1 - Display all currently registered devices");
                 Console.WriteLine("2 - Add new device to hub");
                 Console.WriteLine("3 - Delete existing device from hub");
+                Console.WriteLine("4 - Send notification to device");
                 Console.WriteLine("X - Exit");
                 Console.WriteLine();
 
@@ -60,6 +62,9 @@ namespace RegistryManagerTestApp
                         break;
                     case '3':
                         await DeleteExistingDevice();
+                        break;
+                    case '4':
+                        await SendNotificationToDevice();
                         break;
                     case 'X':
                         return;
@@ -139,6 +144,27 @@ namespace RegistryManagerTestApp
             using (var registryManager = RegistryManager.CreateFromConnectionString(_iotHubConnectionString))
             {
                 await registryManager.RemoveDeviceAsync(deviceId);
+            }
+
+            Console.WriteLine("Done");
+        }
+
+        private async Task SendNotificationToDevice()
+        {
+            Console.WriteLine("Send notification to device:");
+
+            Console.WriteLine();
+            Console.Write("Enter ID for device: ");
+            var deviceId = Console.ReadLine();
+
+            var message = $"The current time from back end is {DateTime.Now.ToLongTimeString()}.";
+            var encodedMessage = new Message(Encoding.ASCII.GetBytes(message));
+
+            Console.WriteLine($"Sending message [{message}]");
+
+            using (var serviceClient = ServiceClient.CreateFromConnectionString(_iotHubConnectionString))
+            {
+                await serviceClient.SendAsync(deviceId, encodedMessage);
             }
 
             Console.WriteLine("Done");
