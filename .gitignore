@@ -1,0 +1,9 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/AzureIotGoal/.vs
+/AzureIotGoal/DeviceApp/bin/Debug/netcoreapp2.1
+/AzureIotGoal/DeviceApp/obj
+/AzureIotGoal/RegistryManagerTestApp/bin/Debug/netcoreapp2.1
+/AzureIotGoal/RegistryManagerTestApp/obj

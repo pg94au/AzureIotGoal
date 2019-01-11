@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Devices;
+using Microsoft.Azure.EventHubs;
 using Microsoft.Extensions.Configuration;
 
 namespace RegistryManagerTestApp
@@ -11,6 +14,7 @@ namespace RegistryManagerTestApp
     {
         private readonly string _iotHubConnectionString;
         private readonly string _iotHubHostName;
+        private readonly string _eventHubClientConnectionString;
 
         static async Task Main(string[] args)
         {
@@ -30,6 +34,8 @@ namespace RegistryManagerTestApp
 
                 var iotHubConnectionStringBuilder = IotHubConnectionStringBuilder.Create(_iotHubConnectionString);
                 _iotHubHostName = iotHubConnectionStringBuilder.HostName;
+
+                _eventHubClientConnectionString = configuration["EventHubClientConnectionString"];
             }
             catch (Exception e)
             {
@@ -41,6 +47,10 @@ namespace RegistryManagerTestApp
 
         private async Task Run()
         {
+            var eventHubClient = EventHubClient.CreateFromConnectionString(_eventHubClientConnectionString);
+            var cts = new CancellationTokenSource();
+            var receiveMessagesFromDevicesTask = ReceiveMessagesFromDevices(eventHubClient, cts.Token);
+
             while (true)
             {
                 Console.WriteLine("1 - Display all currently registered devices");
@@ -67,6 +77,9 @@ namespace RegistryManagerTestApp
                         await SendNotificationToDevice();
                         break;
                     case 'X':
+                        Console.WriteLine("Stopping receiving messages from devices.");
+                        cts.Cancel();
+                        await receiveMessagesFromDevicesTask;
                         return;
                     default:
                         Console.WriteLine("Choose again!");
@@ -74,6 +87,57 @@ namespace RegistryManagerTestApp
                 }
 
                 Console.WriteLine();
+            }
+        }
+
+        private async Task ReceiveMessagesFromDevices(EventHubClient eventHubClient, CancellationToken cancellationToken)
+        {
+            var runtimeInfo = await eventHubClient.GetRuntimeInformationAsync();
+            var partitions = runtimeInfo.PartitionIds;
+
+            var tasks = new List<Task>();
+            foreach (string partition in partitions)
+            {
+                tasks.Add(ReceiveMessagesFromDevicesAsync(eventHubClient, partition, cancellationToken));
+            }
+
+            // Wait for all the PartitionReceivers to finish.
+            Task.WaitAll(tasks.ToArray());
+        }
+
+        private async Task ReceiveMessagesFromDevicesAsync(EventHubClient eventHubClient, string partition, CancellationToken cancellationToken)
+        {
+            // TODO: Figure out if we can get earlier than from now?
+            var eventHubReceiver = eventHubClient.CreateReceiver("$Default", partition, EventPosition.FromEnqueuedTime(DateTime.Now));
+            Console.WriteLine("Create receiver on partition: " + partition);
+
+            while (true)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                var events = await eventHubReceiver.ReceiveAsync(maxMessageCount:100, waitTime:TimeSpan.FromSeconds(1)); // Times out returning no events if there is no data.
+                if (events == null) continue;
+
+                foreach (var eventData in events)
+                {
+                    string data = Encoding.UTF8.GetString(eventData.Body.Array);
+
+                    Console.WriteLine($"Message received on partition {partition}: {data}");
+
+                    //Console.WriteLine("Application properties (set by device):");
+                    //foreach (var prop in eventData.Properties)
+                    //{
+                    //    Console.WriteLine("  {0}: {1}", prop.Key, prop.Value);
+                    //}
+                    //Console.WriteLine("System properties (set by IoT Hub):");
+                    //foreach (var prop in eventData.SystemProperties)
+                    //{
+                    //    Console.WriteLine("  {0}: {1}", prop.Key, prop.Value);
+                    //}
+                }
             }
         }
 
