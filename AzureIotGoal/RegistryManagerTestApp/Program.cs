@@ -9,6 +9,7 @@ namespace RegistryManagerTestApp
     class Program
     {
         private readonly string _iotHubConnectionString;
+        private readonly string _iotHubHostName;
 
         static async Task Main(string[] args)
         {
@@ -25,6 +26,9 @@ namespace RegistryManagerTestApp
             try
             {
                 _iotHubConnectionString = configuration["IotHubConnectionString"];
+
+                var iotHubConnectionStringBuilder = IotHubConnectionStringBuilder.Create(_iotHubConnectionString);
+                _iotHubHostName = iotHubConnectionStringBuilder.HostName;
             }
             catch (Exception e)
             {
@@ -115,8 +119,13 @@ namespace RegistryManagerTestApp
             Console.WriteLine($"Device {newDevice.Id} created.");
             Console.WriteLine();
             Console.WriteLine("To connect this device, use the following credentials:");
+            Console.WriteLine($"HostName: {_iotHubHostName}");
+            Console.WriteLine($"DeviceId: {deviceId}");
             Console.WriteLine($"Primary Key: {newDevice.Authentication.SymmetricKey.PrimaryKey}");
             Console.WriteLine($"Secondary Key: {newDevice.Authentication.SymmetricKey.SecondaryKey}");
+            Console.WriteLine(" - or -");
+            Console.WriteLine($"Connection String (Primary): HostName={_iotHubHostName};DeviceId={deviceId};SharedAccessKey={newDevice.Authentication.SymmetricKey.PrimaryKey}");
+            Console.WriteLine($"Connection String (Secondary): HostName={_iotHubHostName};DeviceId={deviceId};SharedAccessKey={newDevice.Authentication.SymmetricKey.SecondaryKey}");
         }
 
         private async Task DeleteExistingDevice()
