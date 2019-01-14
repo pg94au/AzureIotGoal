@@ -3,7 +3,7 @@
 ################################################################################
 
 /AzureIotGoal/.vs
-/AzureIotGoal/DeviceApp/bin/Debug/netcoreapp2.1
+/AzureIotGoal/DeviceApp/bin
 /AzureIotGoal/DeviceApp/obj
-/AzureIotGoal/RegistryManagerTestApp/bin/Debug/netcoreapp2.1
+/AzureIotGoal/RegistryManagerTestApp/bin
 /AzureIotGoal/RegistryManagerTestApp/obj

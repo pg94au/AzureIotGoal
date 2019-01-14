@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Extensions.Configuration;
@@ -40,16 +41,59 @@ namespace DeviceApp
             var deviceClient = DeviceClient.CreateFromConnectionString(_deviceConnectionString, TransportType.Mqtt);
             var twin = await deviceClient.GetTwinAsync();
 
-            Console.WriteLine("Sending periodic events to hub.  Hit Ctrl-C to terminate.");
-            while (true)
+            var cts = new CancellationTokenSource();
+            var receiveTask = ReceiveMessagesFromHub(deviceClient, cts.Token);
+
+            Console.CancelKeyPress += (s, e) =>
             {
-                var message = $"The current time from {twin.DeviceId} is {DateTime.Now.ToLongTimeString()}.";
-                var encodedMessage = new Message(Encoding.ASCII.GetBytes(message));
+                e.Cancel = true;
+                cts.Cancel();
+                Console.WriteLine("Exiting...");
+            };
 
-                Console.WriteLine($"Sending message [{message}]");
-                await deviceClient.SendEventAsync(encodedMessage);
+            Console.WriteLine("Sending periodic events to hub.  Hit Ctrl-C to terminate.");
+            try
+            {
+                while (!cts.IsCancellationRequested)
+                {
+                    var message = $"The current time from {twin.DeviceId} is {DateTime.Now.ToLongTimeString()}.";
+                    var encodedMessage = new Message(Encoding.ASCII.GetBytes(message));
 
-                await Task.Delay(TimeSpan.FromSeconds(5));
+                    Console.WriteLine($"Sending message [{message}]");
+                    await deviceClient.SendEventAsync(encodedMessage, cts.Token);
+
+                    await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                Console.WriteLine("Stopped sending messages.");
+            }
+
+            await receiveTask;
+
+            Console.WriteLine("Done");
+        }
+
+        private async Task ReceiveMessagesFromHub(DeviceClient deviceClient, CancellationToken cancellationToken)
+        {
+            try
+            {
+                while (!cancellationToken.IsCancellationRequested)
+                {
+                    var message = await deviceClient.ReceiveAsync(cancellationToken);
+                    string data = Encoding.UTF8.GetString(message.GetBytes());
+
+                    Console.WriteLine($"Received message: {data}");
+
+                    // Message stays in queue until removed by a call to CompleteAsync.
+                    // (Can also call AbandonAsync to explicitly requeue this message.)
+                    await deviceClient.CompleteAsync(message, cancellationToken);
+                }
+            }
+            catch (Exception)
+            {
+                Console.WriteLine("Stopped receiving messages.");
             }
         }
     }
