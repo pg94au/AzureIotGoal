@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Devices;
 using Microsoft.Azure.EventHubs;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 
 namespace RegistryManagerTestApp
 {
@@ -57,6 +58,8 @@ namespace RegistryManagerTestApp
                 Console.WriteLine("2 - Add new device to hub");
                 Console.WriteLine("3 - Delete existing device from hub");
                 Console.WriteLine("4 - Send notification to device");
+                Console.WriteLine("5 - Display device twin");
+                Console.WriteLine("6 - Update desired property in device twin");
                 Console.WriteLine("X - Exit");
                 Console.WriteLine();
 
@@ -75,6 +78,12 @@ namespace RegistryManagerTestApp
                         break;
                     case '4':
                         await SendNotificationToDevice();
+                        break;
+                    case '5':
+                        await DisplayDeviceTwin(cts.Token);
+                        break;
+                    case '6':
+                        await UpdateDesiredPropertyInDeviceTwin(cts.Token);
                         break;
                     case 'X':
                         Console.WriteLine("Stopping receiving messages from devices.");
@@ -118,7 +127,8 @@ namespace RegistryManagerTestApp
                     break;
                 }
 
-                var events = await eventHubReceiver.ReceiveAsync(maxMessageCount:100, waitTime:TimeSpan.FromSeconds(1)); // Times out returning no events if there is no data.
+                var events = await eventHubReceiver.ReceiveAsync(maxMessageCount: 100,
+                    waitTime: TimeSpan.FromSeconds(1)); // Times out returning no events if there is no data.
                 if (events == null) continue;
 
                 foreach (var eventData in events)
@@ -193,8 +203,10 @@ namespace RegistryManagerTestApp
             Console.WriteLine($"Primary Key: {newDevice.Authentication.SymmetricKey.PrimaryKey}");
             Console.WriteLine($"Secondary Key: {newDevice.Authentication.SymmetricKey.SecondaryKey}");
             Console.WriteLine(" - or -");
-            Console.WriteLine($"Connection String (Primary): HostName={_iotHubHostName};DeviceId={deviceId};SharedAccessKey={newDevice.Authentication.SymmetricKey.PrimaryKey}");
-            Console.WriteLine($"Connection String (Secondary): HostName={_iotHubHostName};DeviceId={deviceId};SharedAccessKey={newDevice.Authentication.SymmetricKey.SecondaryKey}");
+            Console.WriteLine(
+                $"Connection String (Primary): HostName={_iotHubHostName};DeviceId={deviceId};SharedAccessKey={newDevice.Authentication.SymmetricKey.PrimaryKey}");
+            Console.WriteLine(
+                $"Connection String (Secondary): HostName={_iotHubHostName};DeviceId={deviceId};SharedAccessKey={newDevice.Authentication.SymmetricKey.SecondaryKey}");
         }
 
         private async Task DeleteExistingDevice()
@@ -216,8 +228,8 @@ namespace RegistryManagerTestApp
         private async Task SendNotificationToDevice()
         {
             Console.WriteLine("Send notification to device:");
-
             Console.WriteLine();
+
             Console.Write("Enter ID for device: ");
             var deviceId = Console.ReadLine();
 
@@ -229,6 +241,48 @@ namespace RegistryManagerTestApp
             using (var serviceClient = ServiceClient.CreateFromConnectionString(_iotHubConnectionString))
             {
                 await serviceClient.SendAsync(deviceId, encodedMessage);
+            }
+
+            Console.WriteLine("Done");
+        }
+
+        private async Task DisplayDeviceTwin(CancellationToken cancellationToken)
+        {
+            Console.WriteLine("Displaying device twin:");
+            Console.WriteLine();
+
+            Console.Write("Enter ID for device: ");
+            var deviceId = Console.ReadLine();
+
+            using (var registryManager = RegistryManager.CreateFromConnectionString(_iotHubConnectionString))
+            {
+                var twin = await registryManager.GetTwinAsync(deviceId, cancellationToken);
+
+                Console.WriteLine(twin.ToJson(Formatting.Indented));
+            }
+        }
+
+        private async Task UpdateDesiredPropertyInDeviceTwin(CancellationToken cancellationToken)
+        {
+            Console.WriteLine("Updating desired property in device twin:");
+            Console.WriteLine();
+
+            Console.Write("Enter ID for device: ");
+            var deviceId = Console.ReadLine();
+
+            Console.Write("Enter property name: ");
+            var name = Console.ReadLine();
+
+            Console.Write("Enter value for property: ");
+            var value = Console.ReadLine();
+
+            using (var registryManager = RegistryManager.CreateFromConnectionString(_iotHubConnectionString))
+            {
+                var twin = await registryManager.GetTwinAsync(deviceId, cancellationToken);
+
+                twin.Properties.Desired[name] = value;
+
+                await registryManager.UpdateTwinAsync(deviceId, twin, twin.ETag, cancellationToken);
             }
 
             Console.WriteLine("Done");

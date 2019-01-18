@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Extensions.Configuration;
+using Newtonsoft.Json;
 
 namespace DeviceApp
 {
@@ -54,6 +55,7 @@ namespace DeviceApp
             while (true)
             {
                 Console.WriteLine("1 - Send event to hub");
+                Console.WriteLine("2 - Display device twin");
                 Console.WriteLine("X - Exit");
                 Console.WriteLine();
 
@@ -63,6 +65,9 @@ namespace DeviceApp
                 {
                     case '1':
                         await SendEventToHub(deviceClient, cts.Token);
+                        break;
+                    case '2':
+                        await DisplayDeviceTwin(deviceClient, cts.Token);
                         break;
                     case 'X':
                         Console.WriteLine("Stopping receiving messages from hub.");
@@ -89,6 +94,15 @@ namespace DeviceApp
 
             Console.WriteLine($"Sending message [{message}]");
             await deviceClient.SendEventAsync(encodedMessage, cancellationToken);
+        }
+
+        private async Task DisplayDeviceTwin(DeviceClient deviceClient, CancellationToken cancellationToken)
+        {
+            Console.WriteLine("Displaying device twin.");
+
+            var twin = await deviceClient.GetTwinAsync(cancellationToken);
+
+            Console.WriteLine(twin.ToJson(Formatting.Indented));
         }
         
         private async Task ReceiveMessagesFromHub(DeviceClient deviceClient, CancellationToken cancellationToken)
