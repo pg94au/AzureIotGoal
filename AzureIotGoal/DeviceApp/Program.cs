@@ -39,10 +39,10 @@ namespace DeviceApp
         private async Task Run()
         {
             var deviceClient = DeviceClient.CreateFromConnectionString(_deviceConnectionString, TransportType.Mqtt);
-            var twin = await deviceClient.GetTwinAsync();
+            
 
             var cts = new CancellationTokenSource();
-            var receiveTask = ReceiveMessagesFromHub(deviceClient, cts.Token);
+            var receiveMessagesFromHubTask = ReceiveMessagesFromHub(deviceClient, cts.Token);
 
             Console.CancelKeyPress += (s, e) =>
             {
@@ -51,30 +51,46 @@ namespace DeviceApp
                 Console.WriteLine("Exiting...");
             };
 
-            Console.WriteLine("Sending periodic events to hub.  Hit Ctrl-C to terminate.");
-            try
+            while (true)
             {
-                while (!cts.IsCancellationRequested)
+                Console.WriteLine("1 - Send event to hub");
+                Console.WriteLine("X - Exit");
+                Console.WriteLine();
+
+                var selection = Console.ReadKey(true);
+
+                switch (char.ToUpperInvariant(selection.KeyChar))
                 {
-                    var message = $"The current time from {twin.DeviceId} is {DateTime.Now.ToLongTimeString()}.";
-                    var encodedMessage = new Message(Encoding.ASCII.GetBytes(message));
-
-                    Console.WriteLine($"Sending message [{message}]");
-                    await deviceClient.SendEventAsync(encodedMessage, cts.Token);
-
-                    await Task.Delay(TimeSpan.FromSeconds(5), cts.Token);
+                    case '1':
+                        await SendEventToHub(deviceClient, cts.Token);
+                        break;
+                    case 'X':
+                        Console.WriteLine("Stopping receiving messages from hub.");
+                        cts.Cancel();
+                        await receiveMessagesFromHubTask;
+                        return;
+                    default:
+                        Console.WriteLine("Choose again!");
+                        break;
                 }
-            }
-            catch (TaskCanceledException)
-            {
-                Console.WriteLine("Stopped sending messages.");
-            }
 
-            await receiveTask;
-
-            Console.WriteLine("Done");
+                Console.WriteLine();
+            }
         }
 
+        private async Task SendEventToHub(DeviceClient deviceClient, CancellationToken cancellationToken)
+        {
+            Console.WriteLine("Sending event to hub.");
+
+            var twin = await deviceClient.GetTwinAsync(cancellationToken);
+
+            var message = $"The current time from {twin.DeviceId} is {DateTime.Now.ToLongTimeString()}.";
+            var encodedMessage = new Message(Encoding.ASCII.GetBytes(message));
+
+            Console.WriteLine($"Sending message [{message}]");
+            await deviceClient.SendEventAsync(encodedMessage, cancellationToken);
+        }
+        
         private async Task ReceiveMessagesFromHub(DeviceClient deviceClient, CancellationToken cancellationToken)
         {
             try
