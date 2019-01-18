@@ -125,7 +125,7 @@ namespace RegistryManagerTestApp
                 {
                     string data = Encoding.UTF8.GetString(eventData.Body.Array);
 
-                    Console.WriteLine($"Message received on partition {partition}: {data}");
+                    Console.WriteLine($"Message received on partition {partition} from {eventData.SystemProperties["iothub-connection-device-id"]}: {data}");
 
                     //Console.WriteLine("Application properties (set by device):");
                     //foreach (var prop in eventData.Properties)
